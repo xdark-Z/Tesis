@@ -2432,7 +2432,7 @@ def validar_hojas_y_columnas(excel_file, required_schema, nombre_archivo):
 
     data = {}
     for sheet, required_cols in required_schema.items():
-        df = xls.parse(sheet)
+        df = pd.read_excel(xls, sheet_name=sheet)
         data[sheet] = df
         missing_cols = [col for col in required_cols if col not in df.columns]
         if missing_cols:
@@ -9528,7 +9528,7 @@ def validar_marina(archivo_marina):
             df = xls.parse(xls.sheet_names[0])
             warnings_list.append("Input_Marina: no se encontró hoja 'Vaciaderos', se usó la primera hoja.")
         else:
-            df = xls.parse('Vaciaderos')
+            df = pd.read_excel(xls, sheet_name='Vaciaderos')
         req_cols = ['Nivel', 'Capacidad', 'Maximo', 'Tipo']
         missing = [c for c in req_cols if c not in df.columns]
         if missing:
@@ -9545,7 +9545,7 @@ def validar_muckpile(archivo_muckpile):
     try:
         xls = pd.ExcelFile(archivo_muckpile)
         sheet = xls.sheet_names[0]
-        df = xls.parse(sheet)
+        df = pd.read_excel(xls, sheet_name=sheet)
         req_cols = ['Nivel', 'Capacidad Ocupada', 'Maximo', 'Tipo']
         missing = [c for c in req_cols if c not in df.columns]
         if missing:
@@ -9908,7 +9908,7 @@ if _archivos_disponibles:
                         for sub_tab, hoja in zip(sub_tabs_hojas, nombres_hojas):
                             with sub_tab:
                                 try:
-                                    df_hoja = excel_file_obj.parse(hoja)
+                                    df_hoja = pd.read_excel(excel_file_obj, sheet_name=hoja)
                                     mostrar_tabla(df_hoja, width='stretch', hide_index=True)
                                     st.caption(f"{df_hoja.shape[0]} filas × {df_hoja.shape[1]} columnas.")
                                 except Exception as e_hoja:
@@ -10100,17 +10100,17 @@ if st.session_state.datos_cargados:
                 # bajo esta key puede traer frentes que ya no existen en las opciones
                 # actuales; se reconcilia ANTES de crear el widget para evitar el error
                 # de Streamlit "default value not part of options".
-                if 'ruta_critica_input' in st.session_state:
+                if 'ruta_critica_input' not in st.session_state:
+                    st.session_state['ruta_critica_input'] = [
+                        f for f in st.session_state.get('ruta_critica', []) if f in _opciones_ruta_critica
+                    ]
+                else:
                     st.session_state['ruta_critica_input'] = [
                         f for f in st.session_state['ruta_critica_input'] if f in _opciones_ruta_critica
                     ]
                 ruta_critica = st.multiselect(
                     "Ruta critica / frentes prioritarios",
                     _opciones_ruta_critica,
-                    # Se filtra contra las opciones vigentes para no romper si el usuario
-                    # cambió de Nivel (Menú 4) y algún frente de la selección anterior ya
-                    # no existe en este Nivel.
-                    default=[f for f in st.session_state.get('ruta_critica', []) if f in _opciones_ruta_critica],
                     key="ruta_critica_input",
                     help="Opcional. Elija los frentes en el orden deseado: el primero que seleccione tiene la máxima prioridad (1º), luego el 2º, 3º, etc. Los frentes no incluidos se simulan después, ordenados por cercanía a FH/OOCC. Para cambiar el orden, quite un frente y vuelva a agregarlo."
                 )
